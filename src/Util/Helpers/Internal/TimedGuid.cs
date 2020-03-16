@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
@@ -11,7 +12,7 @@ namespace Util.Helpers.Internal
     /// </summary>
     class TimedGuid : IComparable<TimedGuid>, IComparable<Guid>, IComparable, IEquatable<TimedGuid>, IEquatable<Guid>, IEqualityComparer<TimedGuid>
     {
-        private static Random R = new Random();
+        private static RNGCryptoServiceProvider R = new RNGCryptoServiceProvider();
         private static int mbrSeq = int.MinValue;
 
         /// <summary>
@@ -30,8 +31,11 @@ namespace Util.Helpers.Internal
         {
             lock (R)
             {
-                mbrMultA = (ushort)(R.Next(1, ushort.MaxValue));
-                mbrMultB = (ushort)(R.Next(1, ushort.MaxValue));
+                byte[] ba = new byte[2], bb = new byte[2];
+                R.GetNonZeroBytes(ba);
+                R.GetNonZeroBytes(bb);
+                mbrMultA = BitConverter.ToUInt16(ba, 0);
+                mbrMultB = BitConverter.ToUInt16(bb, 0);
             }
             mbrType = uType;
             Interlocked.CompareExchange(ref mbrSeq, int.MinValue + 8, int.MaxValue - 8);
@@ -175,6 +179,32 @@ namespace Util.Helpers.Internal
         public override int GetHashCode()
         {
             return mbrTime.GetHashCode() ^ mbrType.GetHashCode() ^ mbrIndex.GetHashCode() ^ mbrMultA.GetHashCode() ^ mbrMultB.GetHashCode();
+        }
+
+        public static bool operator >(TimedGuid lt, TimedGuid rt)
+        {
+            return lt.CompareTo(rt) > 0;
+        }
+
+        public static bool operator >=(TimedGuid lt, TimedGuid rt)
+        {
+            return lt.CompareTo(rt) >= 0;
+        }
+        public static bool operator <(TimedGuid lt, TimedGuid rt)
+        {
+            return lt.CompareTo(rt) < 0;
+        }
+        public static bool operator <=(TimedGuid lt, TimedGuid rt)
+        {
+            return lt.CompareTo(rt) <= 0;
+        }
+        public static bool operator ==(TimedGuid lt, TimedGuid rt)
+        {
+            return lt.CompareTo(rt) == 0;
+        }
+        public static bool operator !=(TimedGuid lt, TimedGuid rt)
+        {
+            return lt.CompareTo(rt) != 0;
         }
     }
 }
